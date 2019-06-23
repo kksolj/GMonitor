@@ -22,5 +22,5 @@ cpu:
   frequcey: 1000
 docker:
   enable: false
-  frequcey: 0
+  frequcey: 0 # frequcey in ms
   containers: []
