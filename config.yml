@@ -1,0 +1,26 @@
+server:
+  enable: true
+  addr: ""
+  token: ""
+client:
+  enable: false
+  url: ""
+  method: ""
+memory:
+  enable: true
+  limit: 42
+  frequcey: 1000
+disk:
+  enable: true
+  frequcey: 1000
+  paths:
+    - path: "c:"
+      limit: 40
+cpu:
+  enable: true
+  limit: 64
+  frequcey: 1000
+docker:
+  enable: false
+  frequcey: 0
+  containers: []
