@@ -1,11 +1,11 @@
 server:
   enable: true
-  addr: ""
-  token: ""
+  addr: "0.0.0.0:80"
+  token: "12345678901"
 client:
   enable: false
   url: ""
-  method: ""
+  method: "POST"
 memory:
   enable: false
   limit: 42
@@ -13,9 +13,6 @@ memory:
 disk:
   enable: false
   frequcey: 1000
-  paths:
-    - path: "c:"
-      limit: 40
 cpu:
   enable: true
   limit: 64

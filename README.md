@@ -261,6 +261,13 @@ method: `POST`
 url: `/docker?id={container_id}`|| `/docker?name=/{container_name}`
 
 header: `TOKEN:${token}`
+## stop docker container
+
+method: `PUT`
+
+url: `/docker?id={container_id}`|| `/docker?name=/{container_name}`
+
+header: `TOKEN:${token}`
 
 ## client api
 

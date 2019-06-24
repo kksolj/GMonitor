@@ -45,13 +45,45 @@ func Service() {
 			}
 			if len(id) != 0 {
 				log.Printf("will start docker container of id %v", id)
-				startContainer(id)
+				if startContainer(id) {
+					writer.WriteHeader(200)
+				} else {
+					writer.WriteHeader(500)
+				}
 			} else {
 				log.Printf("will start docker container of name %v", name)
-				startContainerByName(name)
+				if startContainerByName(name) {
+					writer.WriteHeader(200)
+				} else {
+					writer.WriteHeader(500)
+				}
 			}
-			writer.WriteHeader(200)
 			return
+		case "PUT":
+			id := req.URL.Query().Get("id")
+			name := req.URL.Query().Get("name")
+			if len(id) == 0 && len(name) == 0 {
+				writer.WriteHeader(400)
+				return
+			}
+			if len(id) != 0 {
+				log.Printf("will start docker container of id %v", id)
+				if stopContainer(id) {
+					writer.WriteHeader(200)
+				} else {
+					writer.WriteHeader(500)
+				}
+			} else {
+				log.Printf("will start docker container of name %v", name)
+
+				if stopContainerByName(name) {
+					writer.WriteHeader(200)
+				} else {
+					writer.WriteHeader(500)
+				}
+			}
+			return
+
 		default:
 			all := req.URL.Query().Get("all")
 			d, _ := json.Marshal(containers(len(all) != 0 && strings.ToLower(all) == "true"))

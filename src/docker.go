@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/docker/docker/api/types"
 	client2 "github.com/docker/docker/client"
+	"time"
 )
 
 /*func main() {
@@ -31,6 +32,7 @@ func InitClient() {
 		panic(err)
 	}
 }
+
 func tryInitClient() (r bool) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -41,25 +43,48 @@ func tryInitClient() (r bool) {
 	r = true
 	return
 }
+
 func containers(all bool) (c []types.Container) {
 	c, _ = client.ContainerList(context.Background(), types.ContainerListOptions{
 		All: all,
 	})
 	return
 }
-func startContainer(id string) {
+
+func startContainer(id string) bool {
 	for _, c := range containers(true) {
 		if c.ID == id {
-			client.ContainerStart(context.Background(), c.ID, types.ContainerStartOptions{})
+			return client.ContainerStart(context.Background(), c.ID, types.ContainerStartOptions{}) == nil
 		}
 	}
+	return false
 }
-func startContainerByName(name string) {
+
+func startContainerByName(name string) bool {
 	for _, c := range containers(true) {
 		if sliceContains(c.Names, name) {
-			client.ContainerStart(context.Background(), c.ID, types.ContainerStartOptions{})
+			return client.ContainerStart(context.Background(), c.ID, types.ContainerStartOptions{}) == nil
 		}
 	}
+	return false
+}
+
+func stopContainer(id string) bool {
+	for _, c := range containers(true) {
+		if c.ID == id {
+			return client.ContainerStop(context.Background(), c.ID, &(time.Millisecond*500)) == nil
+		}
+	}
+	return false
+}
+
+func stopContainerByName(name string) bool {
+	for _, c := range containers(true) {
+		if sliceContains(c.Names, name) {
+			return client.ContainerStop(context.Background(), c.ID, &(time.Millisecond*500)) == nil
+		}
+	}
+	return false
 }
 func sliceContains(str []string, s string) bool {
 	for _, x := range str {
