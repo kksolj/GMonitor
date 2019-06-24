@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -24,11 +25,43 @@ func Service() {
 		writer.WriteHeader(200)
 		writer.Write(tempMonitor())
 	})
+	http.HandleFunc("/docker", func(writer http.ResponseWriter, req *http.Request) {
+		tk := req.Header.Get("TOKEN")
+		if tk != Conf.Server.Token {
+			writer.WriteHeader(401)
+			return
+		}
+		if !tryInitClient() {
+			writer.WriteHeader(500)
+			return
+		}
+		switch req.Method {
+		case "POST":
+			id := req.URL.Query().Get("id")
+			name := req.URL.Query().Get("name")
+			if len(id) == 0 && len(name) == 0 {
+				writer.WriteHeader(400)
+				return
+			}
+			if len(id) != 0 {
+				log.Printf("will start docker container of id %v", id)
+				startContainer(id)
+			} else {
+				log.Printf("will start docker container of name %v", name)
+				startContainerByName(name)
+			}
+			writer.WriteHeader(200)
+			return
+		default:
+			all := req.URL.Query().Get("all")
+			d, _ := json.Marshal(containers(len(all) != 0 && strings.ToLower(all) == "true"))
+			writer.WriteHeader(200)
+			writer.Write(d)
+		}
+	})
 	log.Printf("start server on %v \n", Conf.Server.Addr)
 	if e := http.ListenAndServe(Conf.Server.Addr, nil); e != nil {
 		log.Fatal("start server error", e)
-	} else {
-
 	}
 }
 
@@ -40,9 +73,15 @@ type Status struct {
 	Memory      mem.VirtualMemoryStat     `json:"memory"`
 	Swap        mem.SwapMemoryStat        `json:"swap"`
 	Disk        []disk.UsageStat          `json:"disk"`
-	Process     []*process.Process        `json:"process"`
+	Process     []ProcessInfo             `json:"process"`
 	Docker      []docker.CgroupDockerStat `json:"docker"`
-	Time        int64                     `json:"time"`
+	Timestamp   int64                     `json:"timestamp"`
+}
+type ProcessInfo struct {
+	Pid    int32                   `json:"pid"`
+	Name   string                  `json:"name"`
+	Memory *process.MemoryInfoStat `json:"memory"`
+	CPU    float64                 `json:"cpu"`
 }
 
 func tempMonitor() []byte {
@@ -56,29 +95,41 @@ func tempMonitor() []byte {
 
 	path, _ := disk.Partitions(true)
 	if r.Disk == nil {
-		r.Disk = make([]disk.UsageStat, len(path))
+		r.Disk = make([]disk.UsageStat, 0, len(path))
 	}
 	for _, x := range path {
 		s, _ := disk.Usage(x.Mountpoint)
-		r.Disk = append(r.Disk, *s)
+		if s != nil {
+			r.Disk = append(r.Disk, *s)
+		}
 	}
 	v, _ := mem.VirtualMemory()
 	r.Memory = *v
 	s, _ := mem.SwapMemory()
 	r.Swap = *s
-	r.Cpu = cpuTime()
+	r.Cpu = cpuTime(Conf.Cpu.Duration)
 	p, _ := process.Processes()
-	for _, ps := range p {
-		ps.MemoryInfo()
-		ps.CPUPercent()
+	if r.Process == nil {
+		r.Process = make([]ProcessInfo, 0, len(p))
 	}
-	r.Process = p
+	for _, ps := range p {
+		pm, _ := ps.MemoryInfo()
+		pc, _ := ps.CPUPercent()
+		pn, _ := ps.Name()
+		r.Process = append(r.Process, ProcessInfo{
+			Pid:    ps.Pid,
+			Name:   pn,
+			Memory: pm,
+			CPU:    pc,
+		})
+	}
+
 	_, err := exec.LookPath("docker")
 	if err == nil {
 		dc, _ := docker.GetDockerStat()
 		r.Docker = dc
 	}
-	r.Time = time.Now().Unix()
+	r.Timestamp = time.Now().Unix()
 	data, _ := json.Marshal(r)
 	return data
 }

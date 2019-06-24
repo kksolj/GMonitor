@@ -40,7 +40,7 @@ func (m *Monitor) Watch(out chan string) {
 	for _, c := range m.in {
 		go func(c <-chan string) {
 			for v := range c {
-				out <- fmt.Sprintf(`{"server":"%+v","message":%+v}`, m.host, v)
+				out <- fmt.Sprintf(`{"server":"%+v","message":%+v,"timestamp":%v}`, m.host, v, time.Now().Unix())
 			}
 		}(c)
 	}
@@ -79,22 +79,24 @@ func (m *Monitor) cpu() {
 					log.Println("closing CPU monitor")
 					break l
 				default:
-					t := cpuTime()
+					t := cpuTime(Conf.Cpu.Duration)
+					//log.Printf("%.4f\n",t)
 					switch {
 					case t > Conf.Cpu.Limit:
-						c <- fmt.Sprintf(`{"CPU":%v}`, t)
+						c <- fmt.Sprintf(`{"cpu":%.4f}`, t)
 					case t == -1:
-						c <- fmt.Sprintf(`{"CPU":%v}`, t)
+						c <- fmt.Sprintf(`{"cpu":%.4f}`, t)
 					}
 					time.Sleep(time.Duration(uint(time.Millisecond) * Conf.Memory.Frequcey))
 				}
 			}
 		}(ch, w)
+		log.Println("start watching CPU")
 	}
 }
 func (m *Monitor) mem() {
 	if Conf.Memory.Enable {
-		log.Println("start to watch memeory")
+		log.Println("start to watch memory")
 		ch := make(chan string)
 		w := make(chan bool)
 		m.in = append(m.in, ch)
@@ -109,12 +111,13 @@ func (m *Monitor) mem() {
 				default:
 					v, _ := mem.VirtualMemory()
 					if v.UsedPercent > Conf.Memory.Limit {
-						c <- fmt.Sprintf(`{"memeory":%.2f}`, v.UsedPercent)
+						c <- fmt.Sprintf(`{"memory":%.2f}`, v.UsedPercent)
 					}
 					time.Sleep(time.Duration(uint(time.Millisecond) * Conf.Memory.Frequcey))
 				}
 			}
 		}(ch, w)
+		log.Println("start watching memory")
 	}
 }
 func (m *Monitor) disk() {
@@ -154,6 +157,7 @@ func (m *Monitor) disk() {
 				}
 			}
 		}(ch, w, paths)
+		log.Println("start watching disk")
 	}
 }
 func (m *Monitor) docker() {
@@ -181,13 +185,14 @@ func (m *Monitor) docker() {
 					for _, x := range path {
 						t := findContainerIn(d, x.Name, x.Id)
 						if !t.Running {
-							c <- fmt.Sprintf(`{"conainter":"%v","containerId":"%v","status":%v}`, t.Name, t.ContainerID, t.Running)
+							c <- fmt.Sprintf(`{"conainter":"%v","container_id":"%v","status":%v,"running":%v}`, t.Name, t.ContainerID, t.Status, t.Running)
 						}
 					}
 					time.Sleep(time.Duration(uint(time.Millisecond) * Conf.Docker.Frequcey))
 				}
 			}
 		}(ch, w, Conf.Docker.Containers)
+		log.Println("start watching docker")
 	}
 }
 func findContainerIn(c []docker.CgroupDockerStat, name string, id string) *docker.CgroupDockerStat {
@@ -198,27 +203,13 @@ func findContainerIn(c []docker.CgroupDockerStat, name string, id string) *docke
 	}
 	return nil
 }
-func cpuTime() float64 {
-	c, _ := cpu.Times(false)
-	if len(c) == 0 {
+func cpuTime(duration int) float64 {
+	pc, _ := cpu.Percent(time.Millisecond*time.Duration(duration), false)
+	if len(pc) > 0 {
+		return pc[0]
+	} else {
 		return -1
 	}
-	v0 := c[0]
-	t0 := v0.Total()
-	time.Sleep(time.Millisecond)
-	c1, _ := cpu.Times(false)
-	if len(c1) == 0 {
-		return -1
-	}
-	v1 := c1[0]
-	t1 := v0.Total()
-	tt := t1 - t0
-	idle := v1.Idle - v0.Idle
-	//log.Printf("t0:%+v,t1:%+v,tt:%+v,idle:%+v \nv0:%+v,\n v1:%+v", t0, t1, tt,idle, v0, v1)
-	if tt == 0 {
-		return 0
-	}
-	return 100 * float64((tt-idle)/(tt))
 }
 func DoMonitor() {
 	m := Monitor{}

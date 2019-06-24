@@ -30,9 +30,10 @@ func init() {
 	data, _ := ioutil.ReadFile("./config.yml")
 	Conf = Configuration{}
 	yaml.Unmarshal(data, &Conf)
-	if !Conf.Memory.Enable && !Conf.Disk.Enable && !Conf.Cpu.Enable {
+	if !Conf.Memory.Enable && !Conf.Disk.Enable && !Conf.Cpu.Enable && !Conf.Docker.Enable {
 		log.Fatal("have no monitor enabled,check your config.yml")
 	}
+	Conf.validate()
 }
 
 type WebClient struct {
@@ -92,12 +93,16 @@ type DiskPath struct {
 type CPU struct {
 	Enable   bool
 	Limit    float64
+	Duration int
 	Frequcey uint
 }
 
 func (s *CPU) validate() {
 	if s.Enable && s.Frequcey == 0 {
 		s.Frequcey = 1000
+	}
+	if s.Enable && s.Duration == 0 {
+		s.Duration = 100
 	}
 }
 

@@ -7,11 +7,11 @@ client:
   url: ""
   method: ""
 memory:
-  enable: true
+  enable: false
   limit: 42
   frequcey: 1000
 disk:
-  enable: true
+  enable: false
   frequcey: 1000
   paths:
     - path: "c:"

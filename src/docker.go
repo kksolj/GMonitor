@@ -31,13 +31,15 @@ func InitClient() {
 		panic(err)
 	}
 }
-func tryInitClient() {
+func tryInitClient() (r bool) {
 	defer func() {
 		if e := recover(); e != nil {
-			return
+			r = false
 		}
 	}()
 	InitClient()
+	r = true
+	return
 }
 func containers(all bool) (c []types.Container) {
 	c, _ = client.ContainerList(context.Background(), types.ContainerListOptions{
@@ -59,7 +61,6 @@ func startContainerByName(name string) {
 		}
 	}
 }
-
 func sliceContains(str []string, s string) bool {
 	for _, x := range str {
 		if x == s {
