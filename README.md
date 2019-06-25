@@ -305,3 +305,16 @@ header: `TOKEN:${token}`
   "timestamp": 1561353342
 }
 ```
+## docker image useage
+```yml
+version: '2'
+services:
+  monitor:
+    image: monitor
+    expose:
+      - 8080:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/local/bin/docker:/usr/local/bin/docker:ro
+      - /config.yml:/app/config.yml
+```
