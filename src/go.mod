@@ -1,4 +1,4 @@
-module Monitor
+module github.com/ZenLiu/GMonitor
 
 go 1.11
 

@@ -14,10 +14,10 @@ disk:
   enable: false
   frequcey: 1000
 cpu:
-  enable: true
+  enable: false
   limit: 64
   frequcey: 1000
 docker:
   enable: false
-  frequcey: 0 # frequcey in ms
+  frequcey: 1000 # frequcey in ms
   containers: []

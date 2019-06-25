@@ -4,6 +4,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"os"
 )
 
 type Configuration struct {
@@ -27,10 +28,17 @@ func (s *Configuration) validate() {
 var Conf Configuration
 
 func init() {
-	data, _ := ioutil.ReadFile("./config.yml")
+	var config string
+	if len(os.Args) == 2 {
+		config = os.Args[1]
+	} else {
+		config = "./config.yml"
+	}
+	log.Printf("configuration file: %v\n", config)
+	data, _ := ioutil.ReadFile(config)
 	Conf = Configuration{}
 	yaml.Unmarshal(data, &Conf)
-	if !Conf.Memory.Enable && !Conf.Disk.Enable && !Conf.Cpu.Enable && !Conf.Docker.Enable {
+	if !Conf.Memory.Enable && !Conf.Disk.Enable && !Conf.Cpu.Enable && !Conf.Docker.Enable && !Conf.Server.Enable {
 		log.Fatal("have no monitor enabled,check your config.yml")
 	}
 	Conf.validate()
