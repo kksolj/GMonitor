@@ -7,22 +7,6 @@ import (
 	"time"
 )
 
-/*func main() {
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		panic(err)
-	}
-
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{
-		All: true,
-	})
-	if err != nil {
-		panic(err)
-	}
-	for _, container := range containers {
-		log.Printf("%s %s %+v\n", container.ID[0:10], container.Image, container.Names)
-	}
-}*/
 var client *client2.Client
 
 func InitClient() {
@@ -70,18 +54,20 @@ func startContainerByName(name string) bool {
 }
 
 func stopContainer(id string) bool {
+	tm := time.Millisecond * 10
 	for _, c := range containers(true) {
 		if c.ID == id {
-			return client.ContainerStop(context.Background(), c.ID, &(time.Millisecond*500)) == nil
+			return client.ContainerStop(context.Background(), c.ID, &tm) == nil
 		}
 	}
 	return false
 }
 
 func stopContainerByName(name string) bool {
+	tm := time.Millisecond * 10
 	for _, c := range containers(true) {
 		if sliceContains(c.Names, name) {
-			return client.ContainerStop(context.Background(), c.ID, &(time.Millisecond*500)) == nil
+			return client.ContainerStop(context.Background(), c.ID, &tm) == nil
 		}
 	}
 	return false
