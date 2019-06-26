@@ -31,5 +31,5 @@ ping:
   timeout: 20
   count: 5
   ips:   [
-    "www.google.com"
+    "10.10.0.2"
   ]

@@ -11,7 +11,7 @@ func GoPing(addr string, count uint, timeout uint) bool {
 		return false
 	}
 	pinger.SetPrivileged(true)
-	pinger.Interval = time.Millisecond * 500
+	pinger.Interval = time.Millisecond * time.Duration(timeout+1)
 	pinger.Timeout = time.Millisecond * time.Duration(timeout)
 	pinger.Count = int(count)
 	pinger.Run()                 // blocks until finished

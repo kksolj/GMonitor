@@ -4,7 +4,6 @@ package main
 import (
 	"fmt"
 	"os/exec"
-	"strings"
 )
 
 func doPing(addr string, count uint, timeout uint) bool {
@@ -12,6 +11,7 @@ func doPing(addr string, count uint, timeout uint) bool {
 	if err != nil {
 		return GoPing(addr, count, timeout)
 	}
-	out, _ := exec.Command("ping", addr, "-n", fmt.Sprintf("%i", count), "-w", fmt.Sprintf("%i", timeout)).Output()
-	return strings.Contains(string(out), "Destination Host Unreachable")
+	_, er := exec.Command("ping", fmt.Sprintf(` %s -n %v -w %v`, addr, count, timeout)).Output()
+	//log.Printf("ping status %v =>%s", addr, er, er != nil)
+	return er == nil
 }
