@@ -16,6 +16,11 @@ import (
 
 func Service() {
 	http.HandleFunc("/", func(writer http.ResponseWriter, req *http.Request) {
+		defer func() {
+			if er := recover(); er != nil {
+				writer.WriteHeader(500)
+			}
+		}()
 		tk := req.Header.Get("TOKEN")
 		if tk != Conf.Server.Token {
 			writer.WriteHeader(401)
@@ -26,6 +31,11 @@ func Service() {
 		writer.Write(tempMonitor())
 	})
 	http.HandleFunc("/docker", func(writer http.ResponseWriter, req *http.Request) {
+		defer func() {
+			if er := recover(); er != nil {
+				writer.WriteHeader(500)
+			}
+		}()
 		tk := req.Header.Get("TOKEN")
 		if tk != Conf.Server.Token {
 			writer.WriteHeader(401)
@@ -90,6 +100,9 @@ func Service() {
 			writer.WriteHeader(200)
 			writer.Write(d)
 		}
+	})
+	http.HandleFunc("/health", func(writer http.ResponseWriter, req *http.Request) {
+		writer.WriteHeader(200)
 	})
 	log.Printf("start server on %v \n", Conf.Server.Addr)
 	if e := http.ListenAndServe(Conf.Server.Addr, nil); e != nil {

@@ -14,6 +14,8 @@ type Configuration struct {
 	Disk   Disk
 	Cpu    CPU
 	Docker Docker
+	Health HealthCheck
+	Ping   PingCheck
 }
 
 func (s *Configuration) validate() {
@@ -23,6 +25,8 @@ func (s *Configuration) validate() {
 	s.Disk.validate()
 	s.Docker.validate()
 	s.Memory.validate()
+	s.Health.validate()
+	s.Ping.validate()
 }
 
 var Conf Configuration
@@ -87,6 +91,10 @@ type Disk struct {
 	Frequcey uint
 	Paths    []DiskPath
 }
+type DiskPath struct {
+	Path  string
+	Limit float64
+}
 
 func (s *Disk) validate() {
 	if s.Enable && s.Frequcey == 0 {
@@ -94,10 +102,6 @@ func (s *Disk) validate() {
 	}
 }
 
-type DiskPath struct {
-	Path  string
-	Limit float64
-}
 type CPU struct {
 	Enable   bool
 	Limit    float64
@@ -119,6 +123,10 @@ type Docker struct {
 	Frequcey   uint
 	Containers []DockerContainer
 }
+type DockerContainer struct {
+	Id   string
+	Name string
+}
 
 func (s *Docker) validate() {
 	if s.Enable && s.Frequcey == 0 {
@@ -126,9 +134,37 @@ func (s *Docker) validate() {
 	}
 }
 
-type DockerContainer struct {
-	Id   string
-	Name string
+type HealthCheck struct {
+	Enable   bool
+	Frequcey uint
+	Urls     []string
+}
+
+func (s *HealthCheck) validate() {
+	if s.Enable && s.Frequcey == 0 {
+		s.Frequcey = 1000
+	}
+}
+
+type PingCheck struct {
+	Enable   bool
+	Frequcey uint
+	Count    uint
+	Timeout  uint
+	Ips      []string
+}
+
+func (s *PingCheck) validate() {
+	if s.Enable && s.Frequcey == 0 {
+		s.Frequcey = 1000
+	}
+	if s.Enable && s.Count == 0 {
+		s.Count = 3
+	}
+	if s.Enable && s.Timeout == 0 {
+		s.Timeout = 10
+	}
+
 }
 
 /*func main() {

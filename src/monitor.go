@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
-	"github.com/shirou/gopsutil/docker"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/mem"
 	"log"
@@ -36,6 +36,8 @@ func (m *Monitor) Watch(out chan string) {
 	m.mem()
 	m.disk()
 	m.docker()
+	m.healthCheck()
+	m.pingCheck()
 	wg.Add(len(m.in))
 	for _, c := range m.in {
 		go func(c <-chan string) {
@@ -168,6 +170,7 @@ func (m *Monitor) docker() {
 			log.Println("ERROR docker binary not found!")
 			return
 		}
+		InitClient()
 		ch := make(chan string)
 		w := make(chan bool)
 		m.in = append(m.in, ch)
@@ -181,11 +184,12 @@ func (m *Monitor) docker() {
 					log.Println("closing docker monitor")
 					break l
 				default:
-					d, _ := docker.GetDockerStat()
+					d := statusOfContainers()
 					for _, x := range path {
 						t := findContainerIn(d, x.Name, x.Id)
-						if !t.Running {
-							c <- fmt.Sprintf(`{"conainter":"%v","container_id":"%v","status":%v,"running":%v}`, t.Name, t.ContainerID, t.Status, t.Running)
+						//log.Printf("container info %+v\n", t.State)
+						if t.State != "running" {
+							c <- fmt.Sprintf(`{"conainter":"%v","container_id":"%v","status":%v,"state":%v}`, t.Names, t.ID, t.Status, t.State)
 						}
 					}
 					time.Sleep(time.Duration(uint(time.Millisecond) * Conf.Docker.Frequcey))
@@ -195,14 +199,86 @@ func (m *Monitor) docker() {
 		log.Println("start watching docker")
 	}
 }
-func findContainerIn(c []docker.CgroupDockerStat, name string, id string) *docker.CgroupDockerStat {
+func (m *Monitor) healthCheck() {
+	if Conf.Health.Enable && len(Conf.Health.Urls) > 0 {
+		log.Println("start to watch Health")
+		ch := make(chan string)
+		w := make(chan bool)
+		m.in = append(m.in, ch)
+		m.close = append(m.close, w)
+		go func(c chan string, s chan bool, path []string) {
+		l:
+			for {
+				select {
+				case <-s:
+					log.Println("closing health monitor")
+					break l
+				default:
+					for _, x := range path {
+						if !CheckHealth(x) {
+							c <- fmt.Sprintf(`{"health_url":"%v"}`, x)
+						}
+
+					}
+					time.Sleep(time.Duration(uint(time.Millisecond) * Conf.Health.Frequcey))
+				}
+			}
+		}(ch, w, Conf.Health.Urls)
+		log.Println("start watching Health")
+	}
+}
+func (m *Monitor) pingCheck() {
+	if Conf.Ping.Enable && len(Conf.Ping.Ips) > 0 {
+		log.Println("start to watch Ping")
+		ch := make(chan string)
+		w := make(chan bool)
+		m.in = append(m.in, ch)
+		m.close = append(m.close, w)
+		go func(c chan string, s chan bool, path []string, count uint, timeout uint) {
+		l:
+			for {
+				select {
+				case <-s:
+					log.Println("closing Ping monitor")
+					break l
+				default:
+					for _, x := range path {
+						if !doPing(x, count, timeout) {
+							c <- fmt.Sprintf(`{"ping_addr":"%v"}`, x)
+						}
+					}
+					time.Sleep(time.Duration(uint(time.Millisecond) * Conf.Ping.Frequcey))
+				}
+			}
+		}(ch, w, Conf.Ping.Ips, Conf.Ping.Count, Conf.Ping.Timeout)
+		log.Println("start watching Ping")
+	}
+}
+func findContainerIn(c []types.Container, name string, id string) *types.Container {
+	for _, x := range c {
+		if findInSlice(x.Names, name) || x.ID == id {
+			return &x
+		}
+	}
+	return nil
+}
+func findInSlice(c []string, t string) bool {
+	for _, x := range c {
+		if x == t {
+			return true
+		}
+	}
+	return false
+}
+
+/*func findContainerIn(c []docker.CgroupDockerStat, name string, id string) *docker.CgroupDockerStat {
 	for _, x := range c {
 		if x.Name == name || x.ContainerID == id {
 			return &x
 		}
 	}
 	return nil
-}
+}*/
 func cpuTime(duration int) float64 {
 	pc, _ := cpu.Percent(time.Millisecond*time.Duration(duration), false)
 	if len(pc) > 0 {

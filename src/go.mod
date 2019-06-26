@@ -14,6 +14,7 @@ require (
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
+	github.com/sparrc/go-ping v0.0.0-20190613174326-4e5b6552494c
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
 	golang.org/x/sys v0.0.0-20190621062556-bf70e4678053 // indirect
 	gopkg.in/yaml.v2 v2.2.2

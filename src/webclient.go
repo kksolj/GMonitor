@@ -13,6 +13,12 @@ func init() {
 	wCli.Timeout = time.Second
 }
 
+func CheckHealth(url string) bool {
+	if res, er := wCli.Get(url); er != nil {
+		return res.StatusCode == 200
+	}
+	return false
+}
 func Do(method string, url string, body string) bool {
 	req, er := http.NewRequest(strings.ToUpper(method), url, strings.NewReader(body))
 	if er != nil {

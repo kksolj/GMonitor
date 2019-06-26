@@ -8,8 +8,12 @@ import (
 )
 
 var client *client2.Client
+var ctx = context.Background()
 
 func InitClient() {
+	if client != nil {
+		return
+	}
 	var err error
 	client, err = client2.NewEnvClient()
 	if err != nil {
@@ -29,7 +33,7 @@ func tryInitClient() (r bool) {
 }
 
 func containers(all bool) (c []types.Container) {
-	c, _ = client.ContainerList(context.Background(), types.ContainerListOptions{
+	c, _ = client.ContainerList(ctx, types.ContainerListOptions{
 		All: all,
 	})
 	return
@@ -38,7 +42,7 @@ func containers(all bool) (c []types.Container) {
 func startContainer(id string) bool {
 	for _, c := range containers(true) {
 		if c.ID == id {
-			return client.ContainerStart(context.Background(), c.ID, types.ContainerStartOptions{}) == nil
+			return client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}) == nil
 		}
 	}
 	return false
@@ -47,7 +51,7 @@ func startContainer(id string) bool {
 func startContainerByName(name string) bool {
 	for _, c := range containers(true) {
 		if sliceContains(c.Names, name) {
-			return client.ContainerStart(context.Background(), c.ID, types.ContainerStartOptions{}) == nil
+			return client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}) == nil
 		}
 	}
 	return false
@@ -57,7 +61,7 @@ func stopContainer(id string) bool {
 	tm := time.Millisecond * 10
 	for _, c := range containers(true) {
 		if c.ID == id {
-			return client.ContainerStop(context.Background(), c.ID, &tm) == nil
+			return client.ContainerStop(ctx, c.ID, &tm) == nil
 		}
 	}
 	return false
@@ -67,11 +71,19 @@ func stopContainerByName(name string) bool {
 	tm := time.Millisecond * 10
 	for _, c := range containers(true) {
 		if sliceContains(c.Names, name) {
-			return client.ContainerStop(context.Background(), c.ID, &tm) == nil
+			return client.ContainerStop(ctx, c.ID, &tm) == nil
 		}
 	}
 	return false
 }
+
+func statusOfContainers() (c []types.Container) {
+	c, _ = client.ContainerList(ctx, types.ContainerListOptions{
+		All: true,
+	})
+	return
+}
+
 func sliceContains(str []string, s string) bool {
 	for _, x := range str {
 		if x == s {
